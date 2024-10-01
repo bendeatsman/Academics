@@ -1,0 +1,20 @@
+---
+title: "Module 2 Lab"
+author: "Ben Deatsman"
+date: "2024-09-08"
+output: html_document
+
+![](ben_moeller.jpg)
+
+## Intro
+My name is Benjamin Deatsman. I currently work for Archbishop Moeller Baseball in Analytics and Video, where I completed my capstone internship in my last semester of my undergraduate studies. I just finished up an internship with the Joliet Slammers of the Frontier League doing advanced scouting for the professional baseball club. I grew up in Houston, TX and moved to Cincinnati in 2020 to begin college. 
+
+## Academic Background
+* B.S. in Sports Administration (University of Cincinnati, Cincinnati, OH)
+* Graduate Certificate in Data Analytics (University of Cincinnati, Cincinnati, OH)
+
+## Professional Background
+Like mentioned, I work for Moeller Baseball and just completed my summer with the Joliet Slammers. I am in the process of applying to associate/internships with Major League Baseball organizations in the realm of Baseball Operations, specifically for advanced scouting.
+
+## Programming Experience
+I learned about the importance of these skills after my junior year of college and began to teach myself Python through the Python Boot Camp video series by Nick Wan, Director of Analytics for the Cincinnati Reds, on YouTube. I took an intro to Python course during my undergrad, and used my Python skills for my capstone with Moeller. I have never used R before this course and I am excited to learn more about the language and expand my skillset. 

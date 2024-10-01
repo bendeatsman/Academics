@@ -1,0 +1,120 @@
+---
+title: "Module 5 Lab - Data Visualizations | Ben Deatsman"
+output: html_notebook
+---
+
+```{r}
+#Installing and loading packages
+
+library(completejourney)
+library(ggplot2)
+library(tidyverse)
+transactions <- get_transactions()
+
+install.packages("viridis")
+```
+
+```{r, echo = TRUE, collapse = TRUE}
+#Joining datasets, summing total coupons redeemed and filtering for it to exceed 35,000.
+coupon_redemp_plot <- coupon_redemptions %>%
+  left_join(transactions, by = 'household_id') %>%
+  left_join(products, by = 'product_id') %>%
+  group_by(product_category) %>%
+  summarize(total_coupons_redeemed = n()) %>%
+  filter(total_coupons_redeemed > 35000) %>%
+  arrange(desc(total_coupons_redeemed))
+
+#Calculating average sales value of product categories. 
+sales_value_by_product_cat <- transactions %>%
+  left_join(products, by = 'product_id') %>%
+  group_by(product_category) %>%
+  summarize(avg_sales_value = mean(sales_value))
+
+coupon_redemp_plot <- coupon_redemp_plot %>%
+  left_join(sales_value_by_product_cat, by = 'product_category')
+
+ggplot(coupon_redemp_plot, aes(x = reorder(product_category, -total_coupons_redeemed), y = total_coupons_redeemed)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(title = 'Coupon Redemption by Product Category',
+       subtitle = 'Total Coupons Redeemed > 35,000',
+       x = 'Product Category',
+       y = 'Total Coupons Redeemed'
+       ) +
+  geom_label(data = coupon_redemp_plot, aes(label = paste('AVG Sales Value:', round(avg_sales_value, 2))),
+             nudge_y = -20000, 
+             size = 2.75)
+  
+  
+  
+```
+
+```{r, echo = TRUE, collapse = TRUE}
+
+#Joining datasets and calculating total sales value by age and product category. 
+sales_by_age <- transactions %>%
+  left_join(demographics, by = 'household_id') %>%
+  left_join(products, by = 'product_id') %>%
+  filter(age != 'NA') %>%
+  group_by(age, product_category) %>%
+  summarize(
+    total_sales_value = sum(sales_value, na.rm = TRUE), 
+    total_sales = n()
+  ) %>%
+  ungroup()
+
+#Excluding 'COUPON/MISC ITEMS' and filtering for the top 10 categories in sales value. 
+top_product_categories <- sales_by_age %>%
+  group_by(product_category) %>%
+  filter(product_category != 'COUPON/MISC ITEMS') %>%
+  summarise(total_sales_value = sum(total_sales_value)) %>%
+  top_n(10, total_sales_value) %>%
+  pull(product_category)
+
+sales_by_age_top10 <- sales_by_age %>%
+  filter(product_category %in% top_product_categories)
+
+ggplot(sales_by_age_top10, aes(x = reorder(product_category, -total_sales_value), y = total_sales_value, fill = age)) +
+  geom_bar(stat = 'identity') + 
+  coord_flip() +
+  labs(
+    title = 'Total Sales Value by Product Category and Age Group',
+    subtitle = 'Top 10 Products in Sales Value (excl. "COUPONS/MISC ITEMS")',
+    x = 'Product Category', 
+    y = 'Total Sales Value',
+    fill = 'Age Group'
+  ) 
+            
+```
+
+```{r, echo = TRUE, collapse = TRUE}
+
+#Joining datasets and filtering for product categories containing 'pizza'.
+pizza_transactions <- transactions %>%
+  left_join(products, by = 'product_id') %>%
+  filter(str_detect(product_category, regex('pizza', ignore_case = TRUE)))
+
+#Joining to demographics and removing 'NA' values. 
+pizza_data <- pizza_transactions %>%
+  left_join(demographics, by = 'household_id') %>%
+  filter(!is.na(marital_status), !is.na(income), !is.na(age))
+
+#Calculating total transactions.
+pizza_summary <- pizza_data %>%
+  group_by(marital_status, income, age) %>%
+  summarize(total_transactions = n()) %>%
+  ungroup()
+
+ggplot(pizza_summary, aes(x = income, y = age, size = total_transactions)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  facet_wrap(~marital_status) +
+  labs(
+    title = 'Pizza Transactions by Marital Status, Income, and Age Group',
+    x = 'Income',
+    y = 'Age Group',
+    size = 'Total Transactions'
+  ) +
+  theme(axis.text.x = element_text(angle = 65, hjust = 1))
+  
+```
+

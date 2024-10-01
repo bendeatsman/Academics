@@ -1,0 +1,190 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, echo = TRUE, collapse = TRUE}
+
+library(tidyverse)
+library(lubridate)
+library(completejourney)
+
+transactions <- get_transactions()
+dim(transactions)
+
+promotions <- get_promotions()
+dim(promotions)
+
+demographics
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 1. Fill in the blanks with the correct join operations to answer the following questions. Using the
+## transactions and demographics data, how many of the 1,469,307 transactions do we have demo-
+## graphic information for? How many of the transactions do we not have demographic information
+## on?
+
+transactions %>%
+  inner_join(demographics, by = 'household_id') %>%
+  tally()
+
+transactions %>%
+  anti_join(demographics, by = 'household_id') %>%
+  tally()
+```
+
+```{r, echo = TRUE, collapse = TRUE}
+## 2. Fill in the blanks to perform an inner join with the transactions and demographics data. Then,
+## compute the total sales_value by age category to identify which age group generates the most sales.
+
+transactions %>%
+inner_join(demographics, by = "household_id") %>%
+group_by(age) %>%
+summarise(total_sales = sum(sales_value, na.rm = TRUE)) %>%
+arrange(desc(total_sales))
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 3. Identify all households that have total sales (sales_value) of $1000 or more. To do this, fill in the
+## blanks to compute total sales by household ID and then filter for those household IDs that have
+## total_sales equal to or greater than $1000.
+
+# Identify households with $1000 or more in total sales
+hshld_1000 <- transactions %>%
+  group_by(household_id) %>%
+  summarize(total_sales = sum(sales_value, na.rm = TRUE)) %>%
+  filter(total_sales >= 1000)
+hshld_1000
+
+# How many of these households do we have demographic data on?
+hshld_1000 %>%
+  inner_join(demographics, by = "household_id") %>%
+  tally()
+
+# How many do we not have demographic on?
+hshld_1000 %>%
+  anti_join(demographics, by = "household_id") %>%
+  tally()
+
+# Which income range produces the most households that spend \$1000 or more?
+hshld_1000 %>%
+  inner_join(demographics, by = 'household_id') %>%
+  group_by(income) %>%
+  summarize(household_count = n()) %>%
+  arrange(desc(household_count))
+
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 4. Using the promotions and transactions data, compute the total sales for all products that were in
+## a display in the front of the store (display_location = 1)
+
+# join transactions and filtered promotions data
+front_display_trans <- promotions %>%
+  filter(display_location == 1) %>%
+  inner_join(transactions, by = c('product_id', 'store_id', 'week'))
+
+# total sales for all products displayed in the front of the store
+front_display_trans %>%
+  summarize(total_sales = sum(sales_value))
+
+# Identify the product displayed in the front of the store that had the
+# largest total sales
+front_display_trans %>%
+  group_by(product_id) %>%
+  summarize(total_front_display_sales = sum(sales_value)) %>%
+  arrange(desc(total_front_display_sales))
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 5. Fill in the blanks to identify which product_category is related to the coupon where campaign_id is
+## equal to 18 and coupon_upc is equal to 10000089238?
+
+coupons %>%
+  filter(campaign_id == '18', coupon_upc == '10000089238') %>%
+  inner_join(products, by = "product_id")
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 6. Identify all different products that contain “pizza” in their product_type description. Which of these
+## products produces the greatest amount of total sales (compute total sales by product ID and product
+## type)?
+
+products %>%
+  inner_join(transactions, by = 'product_id') %>%
+  filter(str_detect(product_type, 'PIZZA')) %>%
+  group_by(product_id, product_type) %>%
+  summarize(total_sales = sum(sales_value)) %>%
+  arrange(desc(total_sales))
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 7. Fill in the blanks to identify all products that are categorized (product_category) as “pizza” but are
+## considered a “snack” or “appetizer” (via product_type). Hint: the simplest way to do this is to filter
+## first for pizza products and then second for products that are snacks or appetizers.
+
+relevant_products <- products %>%
+  filter(
+    str_detect(product_category, regex('pizza', ignore_case = TRUE)),
+    str_detect(product_type, regex('snack|appetizer', ignore_case = TRUE))
+    )
+
+relevant_products %>%
+  inner_join(transactions, by = 'product_id') %>%
+  group_by(product_id) %>%
+  summarize(total_qty = sum(quantity)) %>%
+  arrange(desc(total_qty))
+
+
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 8. Identify all products that contain “peanut butter” in their product_type. How many unique products
+## does this result in?
+
+pb <- products %>%
+  filter(str_detect(product_type, regex('peanut butter', ignore_case = TRUE)))
+tally(pb)
+
+## For these products, compute the total sales_value by month based on the transaction_timestamp. Which
+## month produces the most sales value for these products? Which month produces the least sales value for
+## these products?
+
+pb %>%
+  inner_join(transactions, by = "product_id") %>%
+  group_by(month = month(transaction_timestamp, label = TRUE)) %>%
+  summarize(total_sales = sum(sales_value)) %>%
+  arrange(desc(total_sales))
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 9. Using the coupon_redemptions data, filter for the coupon associated with campaign_id 18 and
+## coupon_upc “10000085475”. How many households redeemed this coupon? Now, using this coupon,
+## identify the total sales_value for all transactions associated with the household_ids that redeemed
+## this coupon on the same day they redeemed the coupon.
+
+coupon_redemptions %>%
+  filter(campaign_id == '18', coupon_upc == '10000085475') %>%
+  tally()
+
+coupon_redemptions %>%
+  filter(campaign_id == '18', coupon_upc == '10000085475') %>%
+  inner_join(transactions, by = 'household_id') %>%
+  filter(yday(redemption_date) == yday(transaction_timestamp)) %>%
+  group_by(household_id, campaign_id, coupon_upc) %>%
+  summarize(total_sales = sum(sales_value)) %>%
+  arrange(desc(total_sales))
+
+```
+```{r, echo = TRUE, collapse = TRUE}
+## 10. Let’s build onto #9. Using the same redeemed coupon (campaign_id == “18” & coupon_upc
+## == “10000085475”). In this problem we are going to calculate the total sales_value for each
+## product_type that this coupon was applied to so that we can identify which product_type resulted
+## in the greatest sales when associated with this coupon.
+
+coupon_redemptions %>%
+  filter(campaign_id == '18', coupon_upc == '10000085475') %>%
+  inner_join(coupons, by = 'coupon_upc') %>%
+  inner_join(products, by = 'product_id') %>%
+  filter(str_detect(product_category, regex('vegetables', ignore_case = TRUE))) %>%
+  inner_join(transactions, by = c('household_id', 'product_id')) %>%
+  filter(yday(redemption_date) == yday(transaction_timestamp)) %>%
+  group_by(product_type) %>%
+  summarize(total_sales = sum(sales_value)) %>%
+  arrange(desc(total_sales))
+
+```
+
+

@@ -1,0 +1,78 @@
+---
+title: "Module 2 Lab"
+output: html_notebook
+---
+```{r}
+install.packages("readr")
+
+```
+
+## Blood Transfusion
+```{r, echo = TRUE, collapse = TRUE}
+library(readr)
+df <- readr::read_csv('blood_transfusion.csv')
+
+#Data Types of Each Column
+spec(df)
+
+#Missing Values?
+sum(is.na(df))
+
+#Dimensions of Data
+dim(df)
+
+#DF Head
+head(df, 10)
+
+#DF Tail
+tail(df, 10)
+
+#Index for 100th row and Monetary Column
+df[100, 'Monetary']
+
+#Index for just Monetary Column and calculate the mean
+mean(df[['Monetary']])
+
+# Subset this data frame for all observations where `Monetary` is greater
+# than the mean value. How many rows are in the resulting data frame?
+above_avg <- (df[['Monetary']] > mean(df[['Monetary']]))
+df[above_avg, 'Monetary']
+nrow(df[above_avg, 'Monetary'])
+```
+
+## Police Data
+```{r echo = TRUE, collapse = TRUE}
+df1 <- readr::read_csv('PDI__Police_Data_Initiative__Crime_Incidents.csv')
+spec(df1)
+
+#The columns and DF represent crime incidents reported to the Police
+
+#Dimensions of DF
+dim(df1)
+
+#Missing Values?
+sum(is.na(df1))
+
+#Missing Values by column
+colSums(is.na(df1))
+
+#Range of Date Reported Column
+range(df1[['DATE_REPORTED']])
+
+#Table of Age Ranges
+table(df1[['SUSPECT_AGE']])
+
+#Most Common Age Range
+max(df1[['SUSPECT_AGE']])
+
+#Incidents per zip code, sorted most to least
+#Perhaps the issue is the analysis can get confusing with zip codes being a number as well. 
+sort(table(df1['ZIP']), decreasing = TRUE)
+
+#Proportions of Incidents per Day
+table(df1[['DAYOFWEEK']])
+table(df1[['DAYOFWEEK']]) / sum(table(df1[['DAYOFWEEK']])) * 100
+
+#I would be most interested in analyzing the demogrpahic of both the suspect and victim, as well as the zip code. The problem that would arise is half of the rows for suspect demographics are missing, so the data would be a bit unreliable. There shouldn't be any outliers as the data types are character. I would simply remove the NA as it would still provide enough to analyze. 
+```
+
